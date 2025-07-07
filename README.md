@@ -1,6 +1,6 @@
-# Multi-SMTP Email Marketing System
+# Ai Mailer Lite
 
-A comprehensive email marketing automation system designed for Google Colab deployment with multi-SMTP support, GMass integration, and advanced content generation capabilities.
+AI-powered email marketing system - A comprehensive email marketing automation system designed for Google Colab deployment with multi-SMTP support, GMass integration, and advanced content generation capabilities.
 
 ## Features
 
