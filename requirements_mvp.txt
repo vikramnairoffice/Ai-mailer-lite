@@ -1,0 +1,17 @@
+streamlit
+pandas
+selenium
+requests
+jinja2
+reportlab
+python-docx
+pillow
+google-generativeai
+webdriver-manager
+fake-useragent
+chromedriver-autoinstaller
+PyMuPDF
+fitz
+google-auth-oauthlib
+google-auth
+google-api-python-client
