@@ -16,7 +16,7 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, WebDriverException
 from webdriver_manager.chrome import ChromeDriverManager
 from fake_useragent import UserAgent
-from utils import save_to_database, get_from_database, logger
+# Removed database imports - GMass tester now shows immediate results only
 
 @dataclass
 class GmassTestResult:

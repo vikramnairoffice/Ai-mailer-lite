@@ -5,7 +5,7 @@ A comprehensive email marketing automation system designed for Google Colab depl
 
 ## Core Objectives
 - **11-Step Workflow**: Complete email marketing automation from SMTP setup to delivery
-- **Multi-SMTP Concurrency**: Handle up to 20 SMTP accounts simultaneously
+- **Unlimited Multi-SMTP Concurrency**: Handle unlimited SMTP accounts based on user uploads
 - **GMass Integration**: Automated inbox testing and scoring
 - **Content Variety**: 5 distinct content types including AI-generated spintax
 - **Lead Management**: Automated distribution and CSV cleanup
@@ -90,7 +90,7 @@ email_marketing_system/
 5. **Attachment Format**: PDF, Image, DOCX with click-to-call
 6. **Phone Placement**: Body vs attachment-only options
 7. **Personalization**: Firstname/lastname dynamic insertion
-8. **SMTP Selection**: Multi-account management with limits
+8. **SMTP Selection**: Unlimited multi-account management
 9. **Email Limits**: Per-SMTP quota configuration
 10. **GMass Testing**: Automated scoring and ranking
 11. **Execution**: Concurrent sending with progress tracking
@@ -103,11 +103,11 @@ email_marketing_system/
 5. **HTML-to-Image**: Selenium conversion for image emails
 
 ### Multi-SMTP Features
-- **Concurrent Processing**: Threading per SMTP account
-- **Load Distribution**: Intelligent lead partitioning
-- **Rate Limiting**: 4-6 second intervals per account
-- **Progress Tracking**: Real-time status per SMTP
-- **Error Recovery**: Individual SMTP failure handling
+- **Unlimited Concurrent Processing**: Threading per SMTP account with no limit
+- **Intelligent Load Distribution**: Automatic lead partitioning across all uploaded SMTP accounts
+- **Adaptive Rate Limiting**: 4-6 second intervals per account
+- **Real-time Progress Tracking**: Live status monitoring for all SMTP accounts
+- **Individual Error Recovery**: Per-SMTP failure handling and retry logic
 
 ## Development Rules & Guidelines
 
@@ -188,12 +188,12 @@ threading (built-in)
 
 ## Success Criteria
 - ✅ Process 10,000+ leads per session
-- ✅ Support 20 concurrent SMTP accounts
+- ✅ Support unlimited concurrent SMTP accounts (based on user uploads)
 - ✅ Achieve 90%+ email delivery success rate
-- ✅ Complete GMass scoring within 5 minutes
-- ✅ Maintain 4-6 second sending intervals
-- ✅ Provide real-time progress tracking
-- ✅ Handle SMTP failures gracefully
+- ✅ Complete GMass scoring within 5 minutes per SMTP account
+- ✅ Maintain 4-6 second sending intervals per SMTP
+- ✅ Provide real-time progress tracking for all accounts
+- ✅ Handle individual SMTP failures gracefully
 
 ## Future Enhancement Areas
 - **Advanced Analytics**: Delivery tracking and reporting

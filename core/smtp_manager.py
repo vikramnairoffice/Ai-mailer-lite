@@ -35,7 +35,9 @@ def validate_smtp_accounts(accounts: List[Dict[str, Any]]) -> List[Dict[str, Any
     """Validate multiple SMTP accounts concurrently"""
     valid_accounts = []
     
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    # Use dynamic worker count based on number of accounts for unlimited SMTP support
+    max_workers = max(5, len(accounts))  # Minimum 5 workers, unlimited maximum
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = {executor.submit(test_smtp_connection, account): account 
                   for account in accounts}
         
@@ -80,14 +82,15 @@ def get_smtp_status_summary(accounts: List[Dict[str, Any]]) -> Dict[str, int]:
     
     return summary
 
-def select_optimal_smtps(accounts: List[Dict[str, Any]], max_accounts: int = 10) -> List[Dict[str, Any]]:
-    """Select optimal SMTP accounts for sending"""
+def select_optimal_smtps(accounts: List[Dict[str, Any]], max_accounts: int = None) -> List[Dict[str, Any]]:
+    """Select optimal SMTP accounts for sending - unlimited by default"""
     valid_accounts = [acc for acc in accounts if acc.get('status') == 'valid']
     
-    if len(valid_accounts) <= max_accounts:
+    # If no limit specified or limit is greater than available accounts, return all valid accounts
+    if max_accounts is None or len(valid_accounts) <= max_accounts:
         return valid_accounts
     
-    # Prioritize accounts with better performance (can be enhanced with scoring)
+    # Only limit if specifically requested and limit is less than available accounts
     return random.sample(valid_accounts, max_accounts)
 
 def distribute_leads_across_smtps(leads: List[Dict[str, Any]], 

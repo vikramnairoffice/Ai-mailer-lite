@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "mcp-server-filesystem",
+      "args": ["/home/amitr/projects/email-marketing-system"],
+      "env": {
+        "NODE_PATH": "/usr/local/lib/node_modules"
+      }
+    },
+    "python-subprocess": {
+      "command": "python",
+      "args": ["-c", "import subprocess; import sys; import json; exec(open('/home/amitr/projects/email-marketing-system/mcp_python_server.py').read())"],
+      "cwd": "/home/amitr/projects/email-marketing-system",
+      "env": {
+        "PYTHONPATH": "/home/amitr/projects/email-marketing-system",
+        "VIRTUAL_ENV": "/home/amitr/projects/email-marketing-system/mcp_env"
+      }
+    }
+  }
+}
