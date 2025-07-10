@@ -1,0 +1,6 @@
+test1@gmail.com,password123
+test2@gmail.com,password456
+test3@gmail.com,password789
+user@example.com,mypassword
+demo@outlook.com,demopass
+sample@yahoo.com,samplepass

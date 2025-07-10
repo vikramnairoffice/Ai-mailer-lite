@@ -716,13 +716,62 @@ with st.sidebar:
 if st.session_state.step == 1:
     st.header("Step 1: Upload SMTP Accounts")
     
-    uploaded_file = st.file_uploader("Upload SMTP file", type=['csv', 'json'])
+    uploaded_file = st.file_uploader("Upload SMTP file", type=['csv', 'json', 'txt'])
+    
+    # Show format examples
+    with st.expander("📋 Supported File Formats"):
+        st.markdown("""
+        **CSV Format:**
+        ```
+        email,password,smtp_server,smtp_port
+        user@gmail.com,password123,smtp.gmail.com,587
+        ```
+        
+        **JSON Format:**
+        ```json
+        [{"email": "user@gmail.com", "password": "password123"}]
+        ```
+        
+        **TXT Format (New!):**
+        ```
+        user@gmail.com,password123
+        user2@gmail.com,password456
+        ```
+        """)
     
     if uploaded_file:
         try:
             if uploaded_file.name.endswith('.csv'):
                 df = pd.read_csv(uploaded_file)
                 accounts = df.to_dict('records')
+            elif uploaded_file.name.endswith('.txt'):
+                # Parse TXT format: email,password per line
+                accounts = []
+                content = uploaded_file.read().decode('utf-8')
+                lines = content.strip().split('\n')
+                
+                for line_num, line in enumerate(lines, 1):
+                    line = line.strip()
+                    if not line:  # Skip empty lines
+                        continue
+                    
+                    parts = line.split(',', 1)  # Split only on first comma to handle passwords with commas
+                    if len(parts) >= 2:
+                        email = parts[0].strip()
+                        password = parts[1].strip()
+                        
+                        # Validate email format (basic check)
+                        if '@' in email and '.' in email:
+                            accounts.append({
+                                'email': email,
+                                'password': password
+                            })
+                        else:
+                            st.warning(f"⚠️ Line {line_num}: Invalid email format '{email}' - skipped")
+                    else:
+                        st.warning(f"⚠️ Line {line_num}: Invalid format - expected 'email,password' - skipped")
+                
+                st.info(f"📄 Processed {len(lines)} lines, loaded {len(accounts)} valid accounts")
             else:
                 accounts = json.load(uploaded_file)
                 if not isinstance(accounts, list):
