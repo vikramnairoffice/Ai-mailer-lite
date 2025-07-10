@@ -620,6 +620,71 @@ def test_smtp_with_gmass(smtp_config):
     except Exception:
         return random.randint(40, 90)  # Random score as fallback
 
+def generate_email_preview(content_type: str, ai_enhance: bool = False) -> str:
+    """Generate email preview using sample data"""
+    try:
+        # Import content generator
+        import sys
+        sys.path.append('.')
+        from content.content_types import ContentGenerator
+        
+        # Create sample lead data for preview
+        sample_lead = {
+            'firstname': 'John',
+            'lastname': 'Smith',
+            'company': 'Sample Company Inc.',
+            'email': 'john.smith@example.com',
+            'phone': '+1-555-123-4567',
+            'title': 'Marketing Director',
+            'industry': 'Technology'
+        }
+        
+        # Get phone config from session state
+        phone_config = {
+            'phone_number': st.session_state.config.get('phone_number', '+1-555-DEMO-123'),
+            'phone_in_body': st.session_state.config.get('phone_in_body', True)
+        }
+        
+        # Generate content using existing system
+        generator = ContentGenerator()
+        preview_content = generator.generate_content(
+            sample_lead, 
+            content_type, 
+            phone_config, 
+            ai_enhance
+        )
+        
+        return preview_content
+        
+    except Exception as e:
+        # Fallback preview content
+        return f"""
+        <html>
+        <head>
+            <style>
+                body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                .preview-notice {{ background-color: #f0f0f0; padding: 10px; border-radius: 5px; margin-bottom: 20px; }}
+                .content {{ background-color: white; padding: 20px; border: 1px solid #ddd; }}
+            </style>
+        </head>
+        <body>
+            <div class="preview-notice">
+                <strong>📋 Preview Mode:</strong> This is a sample preview using demo data
+            </div>
+            <div class="content">
+                <h2>Email Preview - {content_type.title()} Content</h2>
+                <p><strong>Subject:</strong> Sample Email Campaign</p>
+                <p>Hi John,</p>
+                <p>This is a preview of your {content_type} email content.</p>
+                <p>Lead: John Smith from Sample Company Inc.</p>
+                <p>AI Enhancement: {'Enabled' if ai_enhance else 'Disabled'}</p>
+                <p>Best regards,<br>Your Team</p>
+                <p><small>Error generating preview: {str(e)}</small></p>
+            </div>
+        </body>
+        </html>
+        """
+
 # UI Components
 st.title("📧 Email Marketing System")
 
@@ -739,6 +804,41 @@ elif st.session_state.step == 4:
         'content_type': content_type,
         'ai_enhance': ai_enhance
     })
+    
+    # HTML Preview Section
+    st.markdown("---")
+    st.subheader("📧 Email Preview")
+    
+    if st.button("🔍 Generate Preview", type="secondary"):
+        with st.spinner("Generating preview..."):
+            preview_html = generate_email_preview(content_type, ai_enhance)
+            st.session_state.preview_html = preview_html
+    
+    if 'preview_html' in st.session_state and st.session_state.preview_html:
+        col1, col2 = st.columns([3, 1])
+        
+        with col1:
+            st.markdown("**Email Preview:**")
+            # Display HTML content
+            st.html(st.session_state.preview_html)
+        
+        with col2:
+            st.markdown("**Options:**")
+            if st.button("🔄 Refresh"):
+                with st.spinner("Refreshing preview..."):
+                    st.session_state.preview_html = generate_email_preview(content_type, ai_enhance)
+                    st.rerun()
+            
+            if st.button("📝 View HTML Source"):
+                st.session_state.show_html_source = not st.session_state.get('show_html_source', False)
+                st.rerun()
+        
+        # Show HTML source if requested
+        if st.session_state.get('show_html_source', False):
+            st.markdown("**HTML Source:**")
+            st.code(st.session_state.preview_html, language='html')
+    
+    st.markdown("---")
     
     if st.button("Next: Attachment Format"):
         st.session_state.step = 5
@@ -861,15 +961,29 @@ elif st.session_state.step == 9:
 elif st.session_state.step == 10:
     st.header("Step 10: GMass Testing & SMTP Scoring")
     
-    if st.button("🧪 Test All SMTPs with GMass"):
+    # Check if SMTP accounts are available
+    if not st.session_state.smtp_accounts:
+        st.warning("⚠️ No SMTP accounts loaded. Please go back to Step 1 to upload SMTP accounts.")
+        if st.button("← Back to Step 1"):
+            st.session_state.step = 1
+            st.rerun()
+    else:
+        num_smtps = st.session_state.config.get('num_smtps', len(st.session_state.smtp_accounts))
+        st.info(f"📧 Will test {min(num_smtps, len(st.session_state.smtp_accounts))} SMTP accounts")
+    
+    if st.session_state.smtp_accounts and st.button("🧪 Test All SMTPs with GMass"):
         progress_bar = st.progress(0)
         st.write("Testing inbox deliverability for selected SMTPs...")
         
-        for i, smtp in enumerate(st.session_state.smtp_accounts[:st.session_state.config['num_smtps']]):
+        # Get number of SMTPs to test (fallback to all if not set)
+        num_smtps = st.session_state.config.get('num_smtps', len(st.session_state.smtp_accounts))
+        selected_smtps = st.session_state.smtp_accounts[:num_smtps]
+        
+        for i, smtp in enumerate(selected_smtps):
             st.write(f"Testing {smtp['email']}...")
             score = test_smtp_with_gmass(smtp)
             st.session_state.gmass_scores[smtp['email']] = score
-            progress_bar.progress((i + 1) / st.session_state.config['num_smtps'])
+            progress_bar.progress((i + 1) / len(selected_smtps))
     
     # Display scores
     if st.session_state.gmass_scores:
