@@ -204,7 +204,10 @@ def generate_content(lead, content_type, personalization=True, phone_number=None
     elif content_type == 'html_to_image':
         content = generate_html_to_image(lead, personalization, phone_number, phone_in_body)
     else:
-        content = f"Hello {lead.get('firstname', 'there')}! Quick question about {lead.get('company', 'your business')}."
+        firstname = lead.get('firstname', 'there')
+        lastname = lead.get('lastname', '')
+        full_name = f"{firstname} {lastname}".strip()
+        content = f"Hello {full_name}! Quick question about your professional needs."
     
     # Apply AI enhancement if requested
     if ai_enhance:
@@ -215,9 +218,9 @@ def generate_content(lead, content_type, personalization=True, phone_number=None
 def generate_short_spintax(lead, personalization=True, phone_number=None, phone_in_body=False):
     """Generate short spintax content"""
     templates = [
-        "Hi {firstname}, hope you're doing well. Quick question about {company}. Let's connect!",
-        "Hello {firstname}, I came across {company} and was impressed. Would love to chat!",
-        "Hey {firstname}, I specialize in helping businesses like {company}. Interested in learning more?"
+        "Hi {firstname}, hope you're doing well. Quick question about your business needs. Let's connect!",
+        "Hello {firstname} {lastname}, I came across your profile and was impressed. Would love to chat!",
+        "Hey {firstname}, I specialize in helping professionals like you. Interested in learning more?"
     ]
     
     template = random.choice(templates)
@@ -225,10 +228,10 @@ def generate_short_spintax(lead, personalization=True, phone_number=None, phone_
     if personalization:
         content = template.format(
             firstname=lead.get('firstname', 'there'),
-            company=lead.get('company', 'your business')
+            lastname=lead.get('lastname', '')
         )
     else:
-        content = template.replace('{firstname}', 'there').replace('{company}', 'your business')
+        content = template.replace('{firstname}', 'there').replace('{lastname}', '')
     
     if phone_in_body and phone_number:
         content += f"\n\nCall me: {phone_number}"
@@ -237,12 +240,19 @@ def generate_short_spintax(lead, personalization=True, phone_number=None, phone_
 
 def generate_long_spintax(lead, personalization=True, phone_number=None, phone_in_body=False):
     """Generate long spintax content"""
+    if personalization:
+        firstname = lead.get('firstname', 'there')
+        lastname = lead.get('lastname', '')
+        full_name = f"{firstname} {lastname}".strip()
+    else:
+        full_name = 'there'
+    
     template = f"""
-    Hello {lead.get('firstname', 'there') if personalization else 'there'},
+    Hello {full_name},
     
-    I hope this email finds you well. I'm reaching out because I came across {lead.get('company', 'your business') if personalization else 'your business'} and was impressed by what you do.
+    I hope this email finds you well. I'm reaching out because I came across your profile and was impressed by your professional background.
     
-    We specialize in helping businesses achieve their goals and overcome challenges. Our proven approach has helped hundreds of companies improve their operations and results.
+    We specialize in helping professionals achieve their goals and overcome challenges. Our proven approach has helped hundreds of individuals improve their operations and results.
     
     I'd love to learn more about your current situation and see how we might be able to help.
     
@@ -260,12 +270,19 @@ def generate_html_template(lead, personalization=True, phone_number=None, phone_
     """Generate HTML template"""
     phone_section = f"<p>Call me: {phone_number}</p>" if phone_in_body and phone_number else ""
     
+    if personalization:
+        firstname = lead.get('firstname', 'there')
+        lastname = lead.get('lastname', '')
+        full_name = f"{firstname} {lastname}".strip()
+    else:
+        full_name = 'there'
+    
     return f"""
     <html>
     <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>Hello {lead.get('firstname', 'there') if personalization else 'there'}!</h2>
-        <p>I hope this email finds you well. I came across {lead.get('company', 'your business') if personalization else 'your business'} and was impressed.</p>
-        <p>We help businesses achieve their goals. Would you be interested in connecting?</p>
+        <h2>Hello {full_name}!</h2>
+        <p>I hope this email finds you well. I came across your profile and was impressed by your professional experience.</p>
+        <p>We help professionals achieve their goals. Would you be interested in connecting?</p>
         {phone_section}
         <p>Best regards</p>
     </body>
@@ -276,11 +293,18 @@ def generate_table_format(lead, personalization=True, phone_number=None, phone_i
     """Generate table format"""
     phone_section = f"<p>Call me: {phone_number}</p>" if phone_in_body and phone_number else ""
     
+    if personalization:
+        firstname = lead.get('firstname', 'there')
+        lastname = lead.get('lastname', '')
+        full_name = f"{firstname} {lastname}".strip()
+    else:
+        full_name = 'there'
+    
     return f"""
     <html>
     <body style="font-family: Arial, sans-serif; padding: 20px;">
-        <h2>Hello {lead.get('firstname', 'there') if personalization else 'there'}!</h2>
-        <p>Regarding {lead.get('company', 'your business') if personalization else 'your business'}:</p>
+        <h2>Hello {full_name}!</h2>
+        <p>Here's what we can offer you:</p>
         <table border="1" style="border-collapse: collapse; width: 100%;">
             <tr><th>Service</th><th>Benefit</th></tr>
             <tr><td>Consulting</td><td>Increased Revenue</td></tr>
@@ -723,9 +747,11 @@ if st.session_state.step == 1:
         st.markdown("""
         **CSV Format:**
         ```
-        email,password,smtp_server,smtp_port
-        user@gmail.com,password123,smtp.gmail.com,587
+        email,password
+        user@gmail.com,password123
         ```
+        
+        **Note:** Gmail SMTP settings are automatically configured (smtp.gmail.com:587).
         
         **JSON Format:**
         ```json

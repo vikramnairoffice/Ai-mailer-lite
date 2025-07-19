@@ -16,9 +16,11 @@ user3@gmail.com,password789
 ### 2. **CSV Format**
 Structured format with headers:
 ```csv
-email,password,smtp_server,smtp_port
-user@gmail.com,password123,smtp.gmail.com,587
+email,password
+user@gmail.com,password123
 ```
+
+**Note:** Gmail SMTP settings are automatically configured (smtp.gmail.com:587).
 
 ### 3. **JSON Format**
 Structured JSON array:

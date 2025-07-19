@@ -52,9 +52,9 @@ def load_smtp_from_csv(uploaded_file) -> List[Dict[str, Any]]:
         for _, row in df.iterrows():
             account = {
                 'email': str(row.get('email', '')),
-                'smtp_server': str(row.get('smtp_server', '')),
-                'smtp_port': int(row.get('smtp_port', 587)),
-                'username': str(row.get('username', '')),
+                'smtp_server': 'smtp.gmail.com',  # Always Gmail
+                'smtp_port': 587,  # Standard Gmail port
+                'username': str(row.get('email', '')),  # Username same as email
                 'password': str(row.get('password', ''))
             }
             
@@ -68,7 +68,7 @@ def load_smtp_from_csv(uploaded_file) -> List[Dict[str, Any]]:
 
 def validate_smtp_account(account: Dict[str, Any]) -> bool:
     """Validate SMTP account data"""
-    required_fields = ['email', 'smtp_server', 'smtp_port', 'username', 'password']
+    required_fields = ['email', 'password']
     
     for field in required_fields:
         if field not in account or not account[field]:
@@ -77,12 +77,10 @@ def validate_smtp_account(account: Dict[str, Any]) -> bool:
     if not validate_email(account['email']):
         return False
     
-    try:
-        port = int(account['smtp_port'])
-        if port <= 0 or port > 65535:
-            return False
-    except (ValueError, TypeError):
-        return False
+    # Ensure Gmail settings are set
+    account['smtp_server'] = 'smtp.gmail.com'
+    account['smtp_port'] = 587
+    account['username'] = account['email']
     
     return True
 

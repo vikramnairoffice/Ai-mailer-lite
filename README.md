@@ -122,9 +122,11 @@ Selenium-based conversion of HTML content to image format.
 
 **CSV Format:**
 ```csv
-email,smtp_server,smtp_port,username,password,use_tls,daily_limit,from_name
-your_email@gmail.com,smtp.gmail.com,587,your_email@gmail.com,your_app_password,true,100,Your Name
+email,password
+your_email@gmail.com,your_app_password
 ```
+
+**Note:** Gmail SMTP settings are automatically configured (smtp.gmail.com:587).
 
 ## API Keys Setup
 
