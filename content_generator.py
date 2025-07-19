@@ -26,25 +26,62 @@ from webdriver_manager.chrome import ChromeDriverManager
 import google.generativeai as genai
 from utils import format_phone_number, logger
 
-# Configure Gemini AI
-GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-
 class ContentGenerator:
     """Generate various types of email content."""
     
-    def __init__(self):
+    def __init__(self, api_key: Optional[str] = None, model_name: Optional[str] = None):
         self.logger = logging.getLogger(__name__)
         self.gemini_model = None
+        self.model_name = model_name or "gemini-2.5-flash"
         
-        # Initialize Gemini if API key is available
-        if GEMINI_API_KEY:
+        # Initialize Gemini with provided API key or environment variable
+        if not api_key:
+            api_key = os.getenv('GEMINI_API_KEY')
+        
+        if api_key:
             try:
-                self.gemini_model = genai.GenerativeModel('gemini-pro')
-                self.logger.info("Gemini AI initialized successfully")
+                genai.configure(api_key=api_key)
+                self.gemini_model = genai.GenerativeModel(self.model_name)
+                self.logger.info(f"Gemini AI initialized successfully with {self.model_name}")
             except Exception as e:
                 self.logger.error(f"Error initializing Gemini AI: {e}")
+    
+    def update_api_key(self, api_key: str, model_name: Optional[str] = None) -> bool:
+        """Update the API key and optionally model, then reinitialize"""
+        if not api_key:
+            return False
+        
+        if model_name:
+            self.model_name = model_name
+        
+        try:
+            genai.configure(api_key=api_key)
+            self.gemini_model = genai.GenerativeModel(self.model_name)
+            self.logger.info(f"Gemini AI reinitialized with new API key and {self.model_name}")
+            return True
+        except Exception as e:
+            self.logger.error(f"Error updating Gemini API key: {e}")
+            self.gemini_model = None
+            return False
+    
+    def update_model(self, model_name: str) -> bool:
+        """Update the model name and reinitialize if API key exists"""
+        if not model_name:
+            return False
+        
+        self.model_name = model_name
+        
+        # If we already have a working model, reinitialize with new model
+        if self.gemini_model:
+            try:
+                self.gemini_model = genai.GenerativeModel(self.model_name)
+                self.logger.info(f"Gemini model updated to {self.model_name}")
+                return True
+            except Exception as e:
+                self.logger.error(f"Error updating Gemini model: {e}")
+                return False
+        
+        return True
     
     def generate_short_spintax(self, lead_data: Dict[str, Any], phone_config: Dict[str, Any], 
                              ai_enhance: bool = False) -> str:

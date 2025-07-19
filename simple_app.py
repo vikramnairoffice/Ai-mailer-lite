@@ -34,7 +34,7 @@ st.set_page_config(page_title="Email Marketing System", layout="wide")
 
 # Initialize session state
 if 'step' not in st.session_state:
-    st.session_state.step = 1
+    st.session_state.step = 0  # Start with Settings (Step 0)
 if 'smtp_accounts' not in st.session_state:
     st.session_state.smtp_accounts = []
 if 'leads' not in st.session_state:
@@ -45,6 +45,15 @@ if 'selected_smtps' not in st.session_state:
     st.session_state.selected_smtps = []
 if 'gmass_scores' not in st.session_state:
     st.session_state.gmass_scores = {}
+# AI Settings session state
+if 'gemini_api_key' not in st.session_state:
+    st.session_state.gemini_api_key = ""
+if 'gemini_api_status' not in st.session_state:
+    st.session_state.gemini_api_status = "not_configured"
+if 'gemini_model_info' not in st.session_state:
+    st.session_state.gemini_model_info = ""
+if 'gemini_selected_model' not in st.session_state:
+    st.session_state.gemini_selected_model = "gemini-2.5-flash"  # Default to best price-performance
 
 class GmailAPIMailer:
     """Gmail API mailer class"""
@@ -150,6 +159,91 @@ SUBJECT_LINES = [
     'Important Update', 'Action Required', 'Urgent Notice'
 ]
 
+def test_gemini_api_key(api_key, model_name=None):
+    """Test if the provided Gemini API key is valid and working"""
+    if not GEMINI_API_AVAILABLE:
+        return False, "Gemini library not available. Please install google-generativeai."
+    
+    if not api_key or api_key.strip() == "":
+        return False, "API key is empty. Please provide a valid Gemini API key."
+    
+    # Use provided model or get active model
+    if not model_name:
+        model_name = get_active_gemini_model()
+    
+    try:
+        # Configure Gemini with the test API key
+        genai.configure(api_key=api_key.strip())
+        
+        # Create a test model with selected model
+        model = genai.GenerativeModel(model_name)
+        
+        # Make a simple test request
+        response = model.generate_content("Say 'API test successful' in 3 words")
+        
+        if response and response.text:
+            return True, f"✅ API key is valid! Model: {model_name}, Response: {response.text.strip()}"
+        else:
+            return False, f"❌ API key test failed: No response from {model_name}"
+            
+    except Exception as e:
+        error_msg = str(e)
+        if "API_KEY_INVALID" in error_msg or "invalid api key" in error_msg.lower():
+            return False, "❌ Invalid API key. Please check your Gemini API key."
+        elif "quota" in error_msg.lower():
+            return False, f"⚠️ API quota exceeded. Your API key is valid but quota is exhausted for {model_name}."
+        elif "not found" in error_msg.lower() or "does not exist" in error_msg.lower():
+            return False, f"❌ Model '{model_name}' not found. Please try a different model."
+        else:
+            return False, f"❌ API test failed with {model_name}: {error_msg}"
+
+def get_active_gemini_api_key():
+    """Get the active Gemini API key from session state or environment"""
+    # Priority: Session state > Environment variable
+    if st.session_state.gemini_api_key and st.session_state.gemini_api_key.strip():
+        return st.session_state.gemini_api_key.strip()
+    
+    # Fallback to environment variable
+    return os.getenv('GEMINI_API_KEY', '')
+
+def get_active_gemini_model():
+    """Get the active Gemini model from session state or default"""
+    if 'gemini_selected_model' in st.session_state and st.session_state.gemini_selected_model:
+        return st.session_state.gemini_selected_model
+    
+    # Fallback to default model
+    return "gemini-2.5-flash"
+
+def get_gemini_model_options():
+    """Get available Gemini models with descriptions"""
+    return {
+        "gemini-2.5-pro": {
+            "name": "🚀 Gemini 2.5 Pro",
+            "description": "Most Powerful - Best for complex reasoning and coding",
+            "category": "Premium"
+        },
+        "gemini-2.5-flash": {
+            "name": "⚡ Gemini 2.5 Flash", 
+            "description": "Recommended - Best price/performance balance",
+            "category": "Recommended"
+        },
+        "gemini-2.5-flash-lite": {
+            "name": "💰 Gemini 2.5 Flash-Lite",
+            "description": "Most Cost-Efficient - High throughput",
+            "category": "Economy"
+        },
+        "gemini-1.5-pro": {
+            "name": "🔧 Gemini 1.5 Pro",
+            "description": "Legacy - Stable multimodal model",
+            "category": "Legacy"
+        },
+        "gemini-1.5-flash": {
+            "name": "⚡ Gemini 1.5 Flash",
+            "description": "Legacy - Fast and versatile",
+            "category": "Legacy"
+        }
+    }
+
 # AI Enhancement Functions
 def enhance_content_with_ai(content, lead, content_type):
     """Enhance content using Google Gemini AI"""
@@ -157,12 +251,12 @@ def enhance_content_with_ai(content, lead, content_type):
         return content
     
     try:
-        api_key = os.getenv('GEMINI_API_KEY')
+        api_key = get_active_gemini_api_key()
         if not api_key:
             return content
             
         genai.configure(api_key=api_key)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel(get_active_gemini_model())
         
         prompt = f"""
         Enhance this {content_type} email content to make it more engaging and professional:
@@ -714,8 +808,9 @@ st.title("📧 Email Marketing System")
 
 # Sidebar navigation
 with st.sidebar:
-    st.header("11-Step Workflow")
+    st.header("Settings + 11-Step Workflow")
     step_names = [
+        "⚙️ Settings",
         "1. SMTP Upload",
         "2. Lead Upload", 
         "3. Phone Config",
@@ -729,15 +824,168 @@ with st.sidebar:
         "11. Execution"
     ]
     
-    for i in range(1, 12):
+    for i in range(0, 12):
         if st.session_state.step == i:
-            st.write(f"**► {step_names[i-1]}**")
+            st.write(f"**► {step_names[i]}**")
         else:
-            if st.button(step_names[i-1]):
+            if st.button(step_names[i]):
                 st.session_state.step = i
 
+# Step 0: Settings
+if st.session_state.step == 0:
+    st.header("⚙️ Settings")
+    
+    # AI Configuration Section
+    st.subheader("🤖 AI Configuration")
+    
+    col1, col2 = st.columns([3, 1])
+    
+    with col1:
+        # API Key Status Indicator
+        if st.session_state.gemini_api_status == "valid":
+            st.success("✅ Gemini API Key: Active")
+            if st.session_state.gemini_model_info:
+                st.info(st.session_state.gemini_model_info)
+        elif st.session_state.gemini_api_status == "invalid":
+            st.error("❌ Gemini API Key: Invalid")
+        elif st.session_state.gemini_api_status == "testing":
+            st.warning("⏳ Testing API Key...")
+        else:
+            env_key = os.getenv('GEMINI_API_KEY', '')
+            if env_key:
+                st.info("🔧 Using environment variable GEMINI_API_KEY")
+            else:
+                st.warning("⚠️ No Gemini API Key configured")
+    
+    with col2:
+        # Current API key source indicator
+        current_key = get_active_gemini_api_key()
+        if current_key:
+            if st.session_state.gemini_api_key:
+                st.caption("🔑 Session Key")
+            else:
+                st.caption("🔧 Environment Key")
+    
+    # API Key Input
+    st.markdown("**Gemini API Key:**")
+    api_key_input = st.text_input(
+        "Enter your Google Gemini API key",
+        value=st.session_state.gemini_api_key,
+        type="password",
+        placeholder="AIza... (your Gemini API key)",
+        help="Get your API key from Google AI Studio: https://makersuite.google.com/app/apikey"
+    )
+    
+    # Update session state when input changes
+    if api_key_input != st.session_state.gemini_api_key:
+        st.session_state.gemini_api_key = api_key_input
+        st.session_state.gemini_api_status = "not_configured"
+        st.session_state.gemini_model_info = ""
+    
+    # Model Selection
+    st.markdown("**AI Model Selection:**")
+    model_options = get_gemini_model_options()
+    
+    # Create options for selectbox
+    model_display_names = []
+    model_keys = []
+    for key, info in model_options.items():
+        model_display_names.append(f"{info['name']} - {info['description']}")
+        model_keys.append(key)
+    
+    # Find current selection index
+    current_model = get_active_gemini_model()
+    try:
+        current_index = model_keys.index(current_model)
+    except ValueError:
+        current_index = 1  # Default to gemini-2.5-flash
+    
+    selected_model_index = st.selectbox(
+        "Choose the Gemini model for content generation",
+        range(len(model_display_names)),
+        index=current_index,
+        format_func=lambda x: model_display_names[x],
+        help="Different models offer various capabilities and pricing. Gemini 2.5 Flash is recommended for most use cases."
+    )
+    
+    # Update session state when model changes
+    selected_model_key = model_keys[selected_model_index]
+    if selected_model_key != st.session_state.gemini_selected_model:
+        st.session_state.gemini_selected_model = selected_model_key
+        # Reset test status when model changes
+        if st.session_state.gemini_api_status == "valid":
+            st.session_state.gemini_api_status = "not_configured"
+            st.session_state.gemini_model_info = ""
+    
+    # Show current model info
+    current_model_info = model_options[selected_model_key]
+    st.caption(f"📊 Selected: {current_model_info['name']} ({current_model_info['category']})")
+    
+    # Action buttons
+    col1, col2, col3 = st.columns([1, 1, 2])
+    
+    with col1:
+        if st.button("🧪 Test Key", disabled=not api_key_input.strip()):
+            if api_key_input.strip():
+                st.session_state.gemini_api_status = "testing"
+                st.rerun()
+    
+    with col2:
+        if st.button("🗑️ Clear Key"):
+            st.session_state.gemini_api_key = ""
+            st.session_state.gemini_api_status = "not_configured"
+            st.session_state.gemini_model_info = ""
+            st.rerun()
+    
+    # Test API key if status is testing
+    if st.session_state.gemini_api_status == "testing" and st.session_state.gemini_api_key:
+        with st.spinner(f"Testing API key with {get_active_gemini_model()}..."):
+            is_valid, message = test_gemini_api_key(st.session_state.gemini_api_key, get_active_gemini_model())
+            if is_valid:
+                st.session_state.gemini_api_status = "valid"
+                st.session_state.gemini_model_info = message
+                st.success(message)
+            else:
+                st.session_state.gemini_api_status = "invalid"
+                st.error(message)
+    
+    # Information section
+    with st.expander("ℹ️ About Gemini API & Models"):
+        st.markdown("""
+        **What is Gemini API?**
+        - Google's AI model for content generation and enhancement
+        - Used for improving email templates and spintax content
+        - Provides intelligent content personalization
+        
+        **Available Models:**
+        - **🚀 Gemini 2.5 Pro**: Most powerful thinking model for complex reasoning
+        - **⚡ Gemini 2.5 Flash**: Recommended for best price/performance balance
+        - **💰 Gemini 2.5 Flash-Lite**: Most cost-efficient for high throughput
+        - **🔧 Gemini 1.5 Pro**: Legacy stable model with multimodal support
+        - **⚡ Gemini 1.5 Flash**: Legacy fast model for quick tasks
+        
+        **How to get an API key:**
+        1. Visit [Google AI Studio](https://makersuite.google.com/app/apikey)
+        2. Sign in with your Google account
+        3. Create a new API key
+        4. Copy and paste it in the field above
+        5. Select your preferred model for content generation
+        
+        **Model Recommendations:**
+        - For general email marketing: **Gemini 2.5 Flash** (default)
+        - For complex content: **Gemini 2.5 Pro**
+        - For cost optimization: **Gemini 2.5 Flash-Lite**
+        
+        **Note:** The system works without Gemini API but with limited AI features.
+        """)
+    
+    # Navigation
+    st.markdown("---")
+    if st.button("➡️ Continue to SMTP Upload", type="primary"):
+        st.session_state.step = 1
+
 # Step 1: Upload SMTP Accounts
-if st.session_state.step == 1:
+elif st.session_state.step == 1:
     st.header("Step 1: Upload SMTP Accounts")
     
     uploaded_file = st.file_uploader("Upload SMTP file", type=['csv', 'json', 'txt'])
